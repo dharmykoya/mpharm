@@ -5,33 +5,44 @@ from rest_framework import viewsets
 
 from .serializers import DiagnosisSerializer
 from .models import Diagnosis
-
+from rest_framework.views import APIView
 from rest_framework import generics, status
 from rest_framework.response import Response
+from django.http import Http404
 
 
-class DiagnosisListView(generics.ListAPIView):
-    queryset = Diagnosis.objects.all()
-    serializer_class = DiagnosisSerializer
+class DiagnosisAPIView(APIView):
+
+    def get(self, request, format=None):
+        diagnosis = Diagnosis.objects.all()
+        serializer = DiagnosisSerializer(diagnosis, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        serializer = DiagnosisSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class DiagnosisCreateView(generics.CreateAPIView):
-    queryset = Diagnosis.objects.all()
-    serializer_class = DiagnosisSerializer
-
-    def create(self, request, *args, **kwargs):
-        super(DiagnosisCreateView, self).create(request, args, kwargs)
-
-        # response = {
-        #     "message": "Successfully created",
-        #     "result": request.data}
-        # return Response(data=response, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+class DiagnosisListView(APIView):
+    def get_object(self, pk):
         try:
-            super(DiagnosisCreateView, self).create(request, args, kwargs)
+            return Diagnosis.objects.get(pk=pk)
+        except Diagnosis.DoesNotExist:
+            raise Http404
 
-            response = {
-                "message": "Successfully created",
-                "result": request.data}
-            return Response(data=response, status=status.HTTP_201_CREATED)
-        except:
-            return Response(status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    def get(self, request, pk, format=None):
+        diagnosis = self.get_object(pk)
+        serializer = DiagnosisSerializer(diagnosis)
+        return Response(serializer.data)
+
+    def patch(self, request, pk, format=None):
+        diagnosis = self.get_object(pk)
+        serializer = DiagnosisSerializer(
+            diagnosis, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
