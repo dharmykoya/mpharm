@@ -104,3 +104,15 @@ class BaseViewTest(APITestCase):
             reverse('diagnosis-detail', kwargs={'pk': 1000}), params
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_diagnosis(self):
+        """
+        This test ensures that a diagnosis detail is updated
+        """
+        diagnosis = Diagnosis.objects.create(category_code="A0102", diagnosis_code="011", full_code="00112",
+                                             abbreviated_description="malaria fungi", full_description="malaria", category_title="fungi malaria")
+
+        response = self.client.delete(
+            reverse('diagnosis-detail', kwargs={'pk': diagnosis.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
