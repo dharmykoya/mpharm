@@ -29,25 +29,19 @@ class BaseViewTest(APITestCase):
         self.create_diagnosis("A042", "31", "0031",
                               "malaria", "malaria virus", "malaria")
 
-
-class GetAllDiagnosisTest(BaseViewTest):
-
     def test_get_all_diagnosis(self):
         """
         This test ensures that all diagnosis added in the setUp method
         exist when we make a GET request to the songs/ endpoint
         """
         # hit the API endpoint
-        response = self.client.get(reverse("all-diagnosis"))
+        response = self.client.get(reverse("diagnosis"))
 
         # fetch the data from db
         expected = Diagnosis.objects.all()
         serialized = DiagnosisSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-
-class CreateDiagnosisTest(BaseViewTest):
 
     def test_create_diagnosis(self):
         """
@@ -62,7 +56,7 @@ class CreateDiagnosisTest(BaseViewTest):
             "full_description": "cold and cough",
             "category_title": "cold"
         }
-        response = self.client.post(reverse("create-diagnosis"), params)
+        response = self.client.post(reverse("diagnosis"), params)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_invalid_field(self):
@@ -79,6 +73,34 @@ class CreateDiagnosisTest(BaseViewTest):
             "category_title": ""
         }
 
-        response = self.client.post(reverse("create-diagnosis"), params)
+        response = self.client.post(reverse("diagnosis"), params)
         self.assertEqual(response.status_code,
                          status.HTTP_400_BAD_REQUEST)
+
+    def test_update_diagnosis(self):
+        """
+        This test ensures that a diagnosis detail is updated
+        """
+        diagnosis = Diagnosis.objects.create(category_code="A002", diagnosis_code="01", full_code="0012",
+                                             abbreviated_description="malaria typhoid", full_description="malaria", category_title="malaria")
+        params = {
+            "full_description": "cold and cough with bacteria",
+        }
+        response = self.client.patch(
+            reverse('diagnosis-detail', kwargs={'pk': diagnosis.id}), params
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["full_description"], params["full_description"])
+
+    def test_invalid_update_diagnosis_(self):
+        """
+        This test ensures that an error is thrown for a diagnosis not found
+        """
+        params = {
+            "full_description": "cold and cough with bacteria",
+        }
+        response = self.client.patch(
+            reverse('diagnosis-detail', kwargs={'pk': 1000}), params
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
