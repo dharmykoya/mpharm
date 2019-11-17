@@ -5,6 +5,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework.views import status
 from .models import Diagnosis
 from .serializers import DiagnosisSerializer
+import json
 
 # Create your tests here.
 
@@ -29,9 +30,9 @@ class BaseViewTest(APITestCase):
                               "malaria", "malaria virus", "malaria")
 
 
-class GetAllSongsTest(BaseViewTest):
+class GetAllDiagnosisTest(BaseViewTest):
 
-    def test_get_all_songs(self):
+    def test_get_all_diagnosis(self):
         """
         This test ensures that all diagnosis added in the setUp method
         exist when we make a GET request to the songs/ endpoint
@@ -44,3 +45,40 @@ class GetAllSongsTest(BaseViewTest):
         serialized = DiagnosisSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class CreateDiagnosisTest(BaseViewTest):
+
+    def test_create_diagnosis(self):
+        """
+        This test ensures that a new diagnosis is added to the db with a POST request
+        """
+        # hit the API endpoint
+        params = {
+            "category_code": "A049",
+            "diagnosis_code": "0867",
+            "full_code": "A084222",
+            "abbreviated_description": "cough",
+            "full_description": "cold and cough",
+            "category_title": "cold"
+        }
+        response = self.client.post(reverse("create-diagnosis"), params)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_invalid_field(self):
+        """
+        This test ensures that aan error is thrown when an empty field is passed in
+        """
+        # hit the API endpoint
+        params = {
+            "category_code": "A049",
+            "diagnosis_code": "0867",
+            "full_code": "A084222",
+            "abbreviated_description": "cough",
+            "full_description": "cold and cough",
+            "category_title": ""
+        }
+
+        response = self.client.post(reverse("create-diagnosis"), params)
+        self.assertEqual(response.status_code,
+                         status.HTTP_400_BAD_REQUEST)
